@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>転転飯店のショート動画</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        iframe { width: 320px; height: 560px; border: none; }
+        button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>転転飯店のショート動画</h1>
+    <iframe id="videoPlayer" allowfullscreen></iframe>
+    <br>
+    <button onclick="playRandomShort()">次の動画</button>
+
+    <script>
+        const API_KEY = "AIzaSyCOzLBZL0hm50IcPXhKAJEDZsAIuG7IOIY";  // YouTube APIキー
+        const CHANNEL_ID = "UCoUExOZwk3jfwCx2RJO0gZW"; // 転転飯店のチャンネルID（後で調べて入れる）
+
+        let videoList = [];
+
+        // 転転飯店のショート動画を取得
+        async function fetchShorts() {
+            const url = `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet&type=video&maxResults=50&q=shorts`;
+            const response = await fetch(url);
+            const data = await response.json();
+            videoList = data.items.map(item => item.id.videoId);
+        }
+
+        // ランダムな動画を再生
+        function playRandomShort() {
+            if (videoList.length === 0) {
+                alert("動画が取得できませんでした。");
+                return;
+            }
+            const randomVideoId = videoList[Math.floor(Math.random() * videoList.length)];
+            document.getElementById("videoPlayer").src = `https://www.youtube.com/embed/${randomVideoId}?autoplay=1`;
+        }
+
+        // ページを開いたら動画リストを取得
+        fetchShorts();
+    </script>
+</body>
+</html>
