@@ -3,45 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>転転飯店のショート動画</title>
+    <title>転転飯店ショートガシャ</title>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; }
-        iframe { width: 320px; height: 560px; border: none; }
-        button { margin-top: 20px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        /* 🌸 全体のデザイン */
+        body { 
+            text-align: center; 
+            font-family: 'Noto Serif JP', serif;
+            background-color: white;
+            color: #b31b1b;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 🏮 中華風の枠（共通） */
+        .chinese-border {
+            border: 8px solid #d40000;
+            padding: 15px;
+            display: inline-block;
+            position: relative;
+            background: white;
+        }
+
+        /* 🏮 角の装飾（タイトル・動画枠・ボタン） */
+        .chinese-border::before,
+        .chinese-border::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 4px solid #d40000;
+        }
+
+        .chinese-border::before {
+            top: -4px;
+            left: -4px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .chinese-border::after {
+            bottom: -4px;
+            right: -4px;
+            border-left: none;
+            border-top: none;
+        }
+
+        /* 🏮 タイトル枠 */
+        .title-container {
+            text-align: center;
+            border-radius: 10px;
+            margin-top: 0;
+        }
+
+        /* タイトル文字 */
+        .main-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 0;
+            color: #b31b1b;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            margin: 5px 0 0;
+            color: #b31b1b;
+        }
+
+        /* 📺 動画の枠 */
+        .video-container {
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        iframe {
+            width: 320px;
+            height: 560px;
+            border-radius: 10px;
+        }
+
+        /* 🔴 ガシャボタン */
+        .gasha-button {
+            background: white;
+            color: #b31b1b;
+            font-size: 18px;
+            font-weight: bold;
+            border: 8px solid #d40000;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 15px;
+        }
+
+        .gasha-button:hover {
+            background: #d40000;
+            color: white;
+        }
+
     </style>
 </head>
 <body>
-    <h1>転転飯店のショート動画</h1>
-    <iframe id="videoPlayer" allowfullscreen></iframe>
-    <br>
-    <button onclick="playRandomShort()">次の動画</button>
+
+    <!-- 🏮 タイトル -->
+    <div class="title-container chinese-border">
+        <h1 class="main-title">転転飯店</h1>
+        <p class="subtitle">ショートガシャ</p>
+    </div>
+
+    <!-- 📺 動画枠 -->
+    <div class="video-container chinese-border">
+        <iframe id="videoPlayer" allowfullscreen></iframe>
+    </div>
+
+    <!-- 🔴 ガシャボタン -->
+    <button class="gasha-button chinese-border" onclick="playRandomShort()">ガシャを回す！</button>
+
+    <!-- 🎵 ドラの音 -->
+    <audio id="gongSound">
+        <source src="https://on-jin.com/sound/ag/s7b14484715/ata/ata_a20.mp3" type="audio/mpeg">
+    </audio>
 
     <script>
-        const API_KEY = "AIzaSyCOzLBZL0hm50IcPXhKAJEDZsAIuG7IOIY";  // YouTube APIキー
-        const CHANNEL_ID = "UCoUExOZwk3jfwCx2RJO0gZW"; // 転転飯店のチャンネルID（後で調べて入れる）
-
+        const API_KEY = "AIzaSyCOzLBZL0hm50IcPXhKAJEDZsAIuG7IOIY"; // APIキーを入力！
+        const CHANNEL_ID = "UCoUExOZwk3jfwCx2RJO0qzw"; // チャンネルIDを入力！
         let videoList = [];
 
-        // 転転飯店のショート動画を取得
-        async function fetchShorts() {
-            const url = `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet&type=video&maxResults=50&q=shorts`;
-            const response = await fetch(url);
-            const data = await response.json();
-            videoList = data.items.map(item => item.id.videoId);
+        // 🎵 ドラの音を再生する関数
+        function playGong() {
+            const gong = document.getElementById("gongSound");
+            gong.muted = false;
+            gong.currentTime = 0;
+            gong.play().catch(error => console.log("音を再生できませんでした:", error));
         }
 
-        // ランダムな動画を再生
+        // 🎥 ① チャンネルのアップロード動画リストを取得
+        async function getUploadPlaylistId() {
+            const url = `https://www.googleapis.com/youtube/v3/channels?key=${API_KEY}&id=${CHANNEL_ID}&part=contentDetails`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.items && data.items.length > 0) {
+                return data.items[0].contentDetails.relatedPlaylists.uploads;
+            } else {
+                console.log("アップロードリストが見つかりませんでした");
+                return null;
+            }
+        }
+
+        // 🎥 ② アップロード動画リストからすべての動画を取得
+        async function fetchAllVideos() {
+            const playlistId = await getUploadPlaylistId();
+            if (!playlistId) return;
+
+            let url = `https://www.googleapis.com/youtube/v3/playlistItems?key=${API_KEY}&playlistId=${playlistId}&part=snippet&maxResults=50`;
+            let nextPageToken = "";
+
+            while (videoList.length < 400) {
+                const response = await fetch(url + (nextPageToken ? `&pageToken=${nextPageToken}` : ""));
+                const data = await response.json();
+                if (data.items) {
+                    videoList.push(...data.items.map(item => item.snippet.resourceId.videoId));
+                }
+                if (data.nextPageToken) {
+                    nextPageToken = data.nextPageToken;
+                } else {
+                    break;
+                }
+            }
+            console.log("取得した動画数:", videoList.length);
+        }
+
+        // 🎥 ③ ランダムな動画を再生（ボタンを押すとすぐに再生）
         function playRandomShort() {
             if (videoList.length === 0) {
                 alert("動画が取得できませんでした。");
                 return;
             }
+            playGong(); // 🎵 ドラの音を鳴らす
             const randomVideoId = videoList[Math.floor(Math.random() * videoList.length)];
-            document.getElementById("videoPlayer").src = `https://www.youtube.com/embed/${randomVideoId}?autoplay=1`;
+            const iframe = document.getElementById("videoPlayer");
+            iframe.src = `https://www.youtube.com/embed/${randomVideoId}?autoplay=1&mute=0`;
         }
 
-        // ページを開いたら動画リストを取得
-        fetchShorts();
+        // 🎥 ④ 全ての動画を取得
+        fetchAllVideos();
     </script>
+
 </body>
 </html>
